@@ -3,6 +3,12 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
+import tensorflow as tf
+from tensorflow.keras import layers, Model
+
+# Fix encoding issue
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
 # Load data
 recipe_data = pd.read_json('recipes.json')  # Replace with your actual data source
@@ -29,10 +35,6 @@ preprocessor = ColumnTransformer(
 # Apply preprocessing
 processed_data = preprocessor.fit_transform(recipes)
 
-
-import tensorflow as tf
-from tensorflow.keras import layers, Model
-
 # User and recipe IDs
 num_users = 1000  # Replace with actual unique user count
 num_recipes = len(recipe_data)
@@ -42,7 +44,7 @@ user_input = layers.Input(shape=(1,), name="User_Input")
 recipe_input = layers.Input(shape=(1,), name="Recipe_Input")
 
 # Embeddings
-embedding_size = 50  # Number of dimensions for embeddings
+embedding_size = 50
 user_embedding = layers.Embedding(num_users, embedding_size, name="User_Embedding")(user_input)
 recipe_embedding = layers.Embedding(num_recipes, embedding_size, name="Recipe_Embedding")(recipe_input)
 
@@ -60,10 +62,10 @@ output = layers.Dense(1, activation="sigmoid", name="Output")(dot_product)
 model = Model(inputs=[user_input, recipe_input], outputs=output)
 model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 
+# Print summary
 model.summary()
 
-
-# Example data (replace with actual swipe data)
+# Example data
 user_ids = np.random.randint(0, num_users, size=10000)
 recipe_ids = np.random.randint(0, num_recipes, size=10000)
 swipes = np.random.randint(0, 2, size=10000)
@@ -88,11 +90,11 @@ history = model.fit(
     batch_size=64
 )
 
-
-
+# Save the model after training
+model.save('recipe_recommendation_model.h5')
 
 # Predicting for a user
-user_id = 123  # Replace with the target user ID
+user_id = 123
 all_recipe_ids = np.arange(num_recipes)
 
 # Predict swipe likelihoods
