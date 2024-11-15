@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useSpring, animated } from 'react-spring';
 import { useSwipeable } from 'react-swipeable';
-
+import video from './like.mp4';
+import img from './demo.jpg';
 const SwipeableCard = ({ image, onSwipe, videoUrl }) => {
   const [style, api] = useSpring(() => ({ x: 0, opacity: 1 }));
   const [showVideo, setShowVideo] = useState(false);
@@ -12,7 +13,7 @@ const SwipeableCard = ({ image, onSwipe, videoUrl }) => {
 
     if (dir === 'right') {
       setShowVideo(true); // Show the video when swiped right
-      setTimeout(() => setShowVideo(false), 1500); // Hide the video after animation (same as the heart)
+      setTimeout(() => setShowVideo(false), 1500); // Hide the video after animation (same duration as the heart)
     }
 
     setTimeout(() => onSwipe(dir), 300); // Trigger callback after animation
@@ -33,7 +34,7 @@ const SwipeableCard = ({ image, onSwipe, videoUrl }) => {
         style={{
           ...style,
           touchAction: 'pan-y',
-          backgroundImage: `url(${image})`,
+          backgroundImage: `url(${img})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           width: '300px',
@@ -46,7 +47,7 @@ const SwipeableCard = ({ image, onSwipe, videoUrl }) => {
       />
       {/* Floating Video */}
       {showVideo && (
-        <div className="floating-video">
+        <div className="floating-video" style={{border:"2px solid"}}> 
           <video
             width="300"
             height="400"
@@ -55,7 +56,7 @@ const SwipeableCard = ({ image, onSwipe, videoUrl }) => {
             loop
             style={{ borderRadius: '10px' }}
           >
-            <source src={videoUrl} type="video/mp4" />
+            <source src={video} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>

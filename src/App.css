@@ -40,3 +40,28 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Floating video animation */
+.floating-video {
+  position: absolute;
+  right: -320px; /* Start off-screen */
+  top: 50%;
+  transform: translateY(-50%); /* Center the video vertically */
+  animation: video-slide 1.5s ease-in-out forwards;
+  z-index: 2; /* Ensure the video is above the card */
+}
+
+@keyframes video-slide {
+  0% {
+    right: -320px; /* Start off-screen */
+    opacity: 0;
+  }
+  50% {
+    right: 10px; /* Slide in from the right */
+    opacity: 1;
+  }
+  100% {
+    right: 10px; /* End in place */
+    opacity: 1;
+  }
+}
