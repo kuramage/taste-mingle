@@ -1,22 +1,17 @@
 import React, { useState } from 'react';
-import { useSpring, animated } from 'react-spring';
 import { useSwipeable } from 'react-swipeable';
-import video from './like.mp4';
-import img from './demo.jpg';
-const SwipeableCard = ({ image, onSwipe, videoUrl }) => {
-  const [style, api] = useSpring(() => ({ x: 0, opacity: 1 }));
-  const [showVideo, setShowVideo] = useState(false);
+import { useSpring, animated } from 'react-spring';
+import like from './like.mp4';
+const SwipeableCard = ({ image, onSwipeLeft, onSwipeRight }) => {
+  const [style, api] = useSpring(() => ({ x: 0 }));
 
-  const handleSwipe = (dir) => {
-    const distance = dir === 'left' ? -500 : 500;
+  const handleSwipe = (direction) => {
+    const distance = direction === 'left' ? -500 : 500;
     api.start({ x: distance, opacity: 0 });
-
-    if (dir === 'right') {
-      setShowVideo(true); // Show the video when swiped right
-      setTimeout(() => setShowVideo(false), 1500); // Hide the video after animation (same duration as the heart)
-    }
-
-    setTimeout(() => onSwipe(dir), 300); // Trigger callback after animation
+    setTimeout(() => {
+      api.start({ x: 0, opacity: 1 });
+      direction === 'left' ? onSwipeLeft() : onSwipeRight();
+    }, 300);
   };
 
   const handlers = useSwipeable({
@@ -27,42 +22,66 @@ const SwipeableCard = ({ image, onSwipe, videoUrl }) => {
   });
 
   return (
-    <div style={{ position: 'relative' }}>
-      {/* Card */}
-      <animated.div
-        {...handlers}
-        style={{
-          ...style,
-          touchAction: 'pan-y',
-          backgroundImage: `url(${img})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          width: '300px',
-          height: '400px',
-          borderRadius: '10px',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-          position: 'absolute',
-          zIndex: 1, // Ensure the card is on top
-        }}
+    <animated.div
+      {...handlers}
+      style={{
+        ...style,
+        width: '300px',
+        height: '400px',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundImage: `url(${image})`,
+        borderRadius: '10px',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+        position: 'relative',
+      }}
+    >
+      <div style={{ position: 'absolute', bottom: '20px', width: '100%', textAlign: 'center', color: '#fff' }}>
+        <h3>Paneer-ki-sabji</h3>
+        <p>Description of one line</p>
+      </div>
+    </animated.div>
+  );
+};
+
+const SwipePage = () => {
+  const [videoSource, setVideoSource] = useState(null);
+  const [showVideo, setShowVideo] = useState(false);
+
+  const handleSwipeLeft = () => {
+    setVideoSource(like);
+    setShowVideo(true);
+  };
+
+  const handleSwipeRight = () => {
+    setVideoSource('right-swipe-video.mp4');
+    setShowVideo(true);
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#DAB7FF' }}>
+      {/* Left Video Div */}
+      <div style={{ width: '150px', marginRight: '20px' }}>
+        {showVideo && videoSource === 'left-swipe-video.mp4' && (
+          <video src="left-swipe-video.mp4" autoPlay loop muted width="100%" />
+        )}
+      </div>
+
+      {/* Swipeable Card */}
+      <SwipeableCard
+        image="https://via.placeholder.com/300x400?text=Paneer-ki-sabji"
+        onSwipeLeft={handleSwipeLeft}
+        onSwipeRight={handleSwipeRight}
       />
-      {/* Floating Video */}
-      {showVideo && (
-        <div className="floating-video" style={{border:"2px solid"}}> 
-          <video
-            width="300"
-            height="400"
-            autoPlay
-            muted
-            loop
-            style={{ borderRadius: '10px' }}
-          >
-            <source src={video} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        </div>
-      )}
+
+      {/* Right Video Div */}
+      <div style={{ width: '150px', marginLeft: '20px' }}>
+        {showVideo && videoSource === 'right-swipe-video.mp4' && (
+          <video src="right-swipe-video.mp4" autoPlay loop muted width="100%" />
+        )}
+      </div>
     </div>
   );
 };
 
-export default SwipeableCard;
+export default SwipePage;
