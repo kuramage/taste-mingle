@@ -24,7 +24,7 @@ module.exports.getRecipeRecommendations = (req, res) => {
 // Function to start model training
 module.exports.startModelTraining = (req, res) => {
   // Resolve the path to your Python script
-  const pythonScriptPath = path.join(__dirname, '..', 'models', 'recommendationModels.py'); // Adjusted the path
+  const pythonScriptPath = path.join(__dirname, '..', 'models', 'recommendationModel.py'); // Adjusted the path
 
   // Start the Python script for model training
   const pythonProcess = spawn('python', [pythonScriptPath]);
