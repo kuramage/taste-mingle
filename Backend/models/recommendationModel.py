@@ -73,7 +73,13 @@ train_users, test_users, train_recipes, test_recipes, train_swipes, test_swipes 
     user_ids, recipe_ids, swipes, test_size=0.2, random_state=42
 )
 
-# Train the model
+# Ensure inputs are 2D arrays
+train_users = train_users.reshape(-1, 1)
+train_recipes = train_recipes.reshape(-1, 1)
+test_users = test_users.reshape(-1, 1)
+test_recipes = test_recipes.reshape(-1, 1)
+
+# Fit the model
 history = model.fit(
     [train_users, train_recipes],
     train_swipes,
@@ -81,6 +87,7 @@ history = model.fit(
     epochs=10,
     batch_size=64
 )
+
 
 
 
