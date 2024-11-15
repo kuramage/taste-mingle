@@ -11,95 +11,99 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8')
 
 # Load data
-recipe_data = pd.read_json('recipes.json')  # Replace with your actual data source
+def loadData(filePath: str) -> pd.DataFrame:
+    return pd.read_json(filePath)
 
 # Select relevant features
-relevant_features = [
-    "cook_time", "prep_time", "calories", "protein", "carbohydratebydifference", 
-    "totallipidfat", "region", "continent", "sub_region"
-]
-recipes = recipe_data[relevant_features]
+def selectRelevantFeatures(data: pd.DataFrame) -> pd.DataFrame:
+    relevantFeatures = [
+        "cook_time", "prep_time", "calories", "protein", "carbohydratebydifference", 
+        "totallipidfat", "region", "continent", "sub_region"
+    ]
+    return data[relevantFeatures]
 
 # Preprocess categorical and numerical features
-categorical_features = ["region", "continent", "sub_region"]
-numerical_features = ["cook_time", "prep_time", "calories", "protein", "carbohydratebydifference", "totallipidfat"]
+def preprocessData(data: pd.DataFrame) -> np.ndarray:
+    categoricalFeatures = ["region", "continent", "sub_region"]
+    numericalFeatures = ["cook_time", "prep_time", "calories", "protein", "carbohydratebydifference", "totallipidfat"]
 
-# Column Transformer
-preprocessor = ColumnTransformer(
-    transformers=[
-        ("num", StandardScaler(), numerical_features),
-        ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_features),
-    ]
-)
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("num", StandardScaler(), numericalFeatures),
+            ("cat", OneHotEncoder(handle_unknown="ignore"), categoricalFeatures),
+        ]
+    )
 
-# Apply preprocessing
-processed_data = preprocessor.fit_transform(recipes)
+    return preprocessor.fit_transform(data)
 
-# User and recipe IDs
-num_users = 1000  # Replace with actual unique user count
-num_recipes = len(recipe_data)
+# Build and compile model
+def buildModel(numUsers: int, numRecipes: int) -> Model:
+    userInput = layers.Input(shape=(1,), name="User_Input")
+    recipeInput = layers.Input(shape=(1,), name="Recipe_Input")
 
-# Input layers
-user_input = layers.Input(shape=(1,), name="User_Input")
-recipe_input = layers.Input(shape=(1,), name="Recipe_Input")
+    embeddingSize = 50
+    userEmbedding = layers.Embedding(numUsers, embeddingSize, name="User_Embedding")(userInput)
+    recipeEmbedding = layers.Embedding(numRecipes, embeddingSize, name="Recipe_Embedding")(recipeInput)
 
-# Embeddings
-embedding_size = 50
-user_embedding = layers.Embedding(num_users, embedding_size, name="User_Embedding")(user_input)
-recipe_embedding = layers.Embedding(num_recipes, embedding_size, name="Recipe_Embedding")(recipe_input)
+    userVector = layers.Flatten()(userEmbedding)
+    recipeVector = layers.Flatten()(recipeEmbedding)
 
-# Flatten embeddings
-user_vector = layers.Flatten()(user_embedding)
-recipe_vector = layers.Flatten()(recipe_embedding)
+    dotProduct = layers.Dot(axes=1)([userVector, recipeVector])
 
-# Dot product for interaction
-dot_product = layers.Dot(axes=1)([user_vector, recipe_vector])
+    output = layers.Dense(1, activation="sigmoid", name="Output")(dotProduct)
 
-# Output layer with sigmoid activation
-output = layers.Dense(1, activation="sigmoid", name="Output")(dot_product)
+    model = Model(inputs=[userInput, recipeInput], outputs=output)
+    model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 
-# Define and compile model
-model = Model(inputs=[user_input, recipe_input], outputs=output)
-model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+    return model
 
-# Print summary
-model.summary()
+# Train the model
+def trainModel(model: Model, trainUsers: np.ndarray, trainRecipes: np.ndarray, trainSwipes: np.ndarray, 
+               testUsers: np.ndarray, testRecipes: np.ndarray, testSwipes: np.ndarray) -> Model:
+    model.fit(
+        [trainUsers, trainRecipes],
+        trainSwipes,
+        validation_data=([testUsers, testRecipes], testSwipes),
+        epochs=10,
+        batch_size=64
+    )
+    return model
 
-# Example data
-user_ids = np.random.randint(0, num_users, size=10000)
-recipe_ids = np.random.randint(0, num_recipes, size=10000)
+# Predict swipe likelihoods for a user
+def predictRecommendations(model: Model, userId: int, numRecipes: int) -> np.ndarray:
+    allRecipeIds = np.arange(numRecipes)
+    predictions = model.predict([np.full(len(allRecipeIds), userId), allRecipeIds])
+    return allRecipeIds[np.argsort(-predictions.flatten())[:10]]
+
+# Main workflow
+recipeData = loadData('recipes.json')  # Replace with your actual data source
+recipes = selectRelevantFeatures(recipeData)
+
+processedData = preprocessData(recipes)
+
+numUsers = 1000  # Replace with actual unique user count
+numRecipes = len(recipeData)
+
+userIds = np.random.randint(0, numUsers, size=10000)
+recipeIds = np.random.randint(0, numRecipes, size=10000)
 swipes = np.random.randint(0, 2, size=10000)
 
-# Train-test split
-train_users, test_users, train_recipes, test_recipes, train_swipes, test_swipes = train_test_split(
-    user_ids, recipe_ids, swipes, test_size=0.2, random_state=42
+trainUsers, testUsers, trainRecipes, testRecipes, trainSwipes, testSwipes = train_test_split(
+    userIds, recipeIds, swipes, test_size=0.2, random_state=42
 )
 
-# Ensure inputs are 2D arrays
-train_users = train_users.reshape(-1, 1)
-train_recipes = train_recipes.reshape(-1, 1)
-test_users = test_users.reshape(-1, 1)
-test_recipes = test_recipes.reshape(-1, 1)
+trainUsers = trainUsers.reshape(-1, 1)
+trainRecipes = trainRecipes.reshape(-1, 1)
+testUsers = testUsers.reshape(-1, 1)
+testRecipes = testRecipes.reshape(-1, 1)
 
-# Fit the model
-history = model.fit(
-    [train_users, train_recipes],
-    train_swipes,
-    validation_data=([test_users, test_recipes], test_swipes),
-    epochs=10,
-    batch_size=64
-)
+model = buildModel(numUsers, numRecipes)
 
-# Save the model after training
+model = trainModel(model, trainUsers, trainRecipes, trainSwipes, testUsers, testRecipes, testSwipes)
+
 model.save('recipe_recommendation_model.h5')
 
 # Predicting for a user
-user_id = 123
-all_recipe_ids = np.arange(num_recipes)
-
-# Predict swipe likelihoods
-predictions = model.predict([np.full(len(all_recipe_ids), user_id), all_recipe_ids])
-
-# Get top recommendations
-recommended_recipes = all_recipe_ids[np.argsort(-predictions.flatten())[:10]]
-print("Recommended Recipe IDs:", recommended_recipes)
+userId = 123
+recommendedRecipes = predictRecommendations(model, userId, numRecipes)
+print("Recommended Recipe IDs:", recommendedRecipes)
