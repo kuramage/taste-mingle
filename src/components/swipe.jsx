@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import "./SwipeImage.css";
-
+import Sample from './demo.jpg'
 const SwipeImage = () => {
   const [swipeX, setSwipeX] = useState(0);  // Track the swipe position
   const [opacity, setOpacity] = useState(1); // Track the opacity
@@ -31,7 +30,7 @@ const SwipeImage = () => {
       onMouseLeave={handleMouseUp}  // Ensure the effect resets if the mouse leaves the image
     >
       <img
-        src="https://via.placeholder.com/400x300"
+        src={Sample}
         alt="Swipeable"
         className="swipe-image"
         style={{
